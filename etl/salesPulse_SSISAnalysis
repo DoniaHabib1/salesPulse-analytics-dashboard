@@ -1,0 +1,710 @@
+/* =========================================================
+   PHASE 1 — DATA EXPLORATION
+   ========================================================= */
+
+
+/* 1. Count Rows */
+
+SELECT COUNT(*) AS Total_Rows
+FROM FactSales;
+
+
+/* 2. Preview Data */
+
+SELECT TOP 10 *
+FROM FactSales;
+
+
+/* 3. Check Duplicate Order IDs */
+
+SELECT
+    Order_ID,
+    COUNT(*) AS Number_Of_Lines
+FROM FactSales
+GROUP BY Order_ID
+HAVING COUNT(*) > 1;
+
+
+/* 4. Check Referential Integrity — Product */
+
+SELECT COUNT(*) AS Invalid_Product_IDs
+FROM FactSales f
+LEFT JOIN DimProduct p
+    ON f.Product_ID = p.Product_ID
+WHERE p.Product_ID IS NULL;
+
+
+/* 5. Check Referential Integrity — Orders */
+
+SELECT COUNT(*) AS Invalid_Order_IDs
+FROM FactSales f
+LEFT JOIN DimOrder o
+    ON f.Order_ID = o.Order_ID
+WHERE o.Order_ID IS NULL;
+
+
+/* =========================================================
+   PHASE 2 — BUSINESS KPIs
+   ========================================================= */
+
+
+/* 6. Total Revenue */
+
+SELECT
+    SUM(Sales) AS Total_Revenue
+FROM FactSales;
+
+
+/* 7. Total Profit */
+
+SELECT
+    SUM(Profit) AS Total_Profit
+FROM FactSales;
+
+
+/* 8. Total Orders */
+
+SELECT
+    COUNT(DISTINCT Order_ID) AS Total_Orders
+FROM FactSales;
+
+
+/* 9. Total Quantity */
+
+SELECT
+    SUM(Quantity) AS Total_Quantity
+FROM FactSales;
+
+
+/* 10. Average Order Value */
+
+SELECT
+    SUM(Sales) / NULLIF(COUNT(DISTINCT Order_ID), 0)
+        AS Average_Order_Value
+FROM FactSales;
+
+
+/* 11. Profit Margin */
+
+SELECT
+    SUM(Profit) / NULLIF(SUM(Sales), 0) * 100
+        AS Profit_Margin
+FROM FactSales;
+
+
+/* =========================================================
+   PHASE 3 — MONTHLY SALES TREND
+   ========================================================= */
+
+
+/* 12. Monthly Sales Trend */
+
+SELECT
+    d.Year,
+    d.Month_Number,
+    d.Month_Name,
+    SUM(f.Sales) AS Monthly_Sales
+FROM FactSales f
+JOIN DimOrder o
+    ON f.Order_ID = o.Order_ID
+JOIN DimDate d
+    ON o.Order_Date = d.Date
+GROUP BY
+    d.Year,
+    d.Month_Number,
+    d.Month_Name
+ORDER BY
+    d.Year,
+    d.Month_Number;
+
+
+/* =========================================================
+   PHASE 4 — BUSINESS QUESTIONS
+   ========================================================= */
+
+
+/* 13. Sales by Category */
+
+SELECT
+    p.Category,
+    SUM(f.Sales) AS Total_Sales
+FROM FactSales f
+JOIN DimProduct p
+    ON f.Product_ID = p.Product_ID
+GROUP BY
+    p.Category
+ORDER BY
+    Total_Sales DESC;
+
+
+/* 14. Sales by Product */
+
+SELECT
+    p.Product_Name,
+    SUM(f.Sales) AS Total_Sales
+FROM FactSales f
+JOIN DimProduct p
+    ON f.Product_ID = p.Product_ID
+GROUP BY
+    p.Product_Name
+ORDER BY
+    Total_Sales DESC;
+
+
+/* 15. Sales by Customer */
+
+SELECT
+    c.Customer_Name,
+    SUM(f.Sales) AS Total_Sales
+FROM FactSales f
+JOIN DimOrder o
+    ON f.Order_ID = o.Order_ID
+JOIN DimCustomer c
+    ON o.Customer_ID = c.Customer_ID
+GROUP BY
+    c.Customer_Name
+ORDER BY
+    Total_Sales DESC;
+
+
+/* 16. Sales by Geography */
+
+SELECT
+    g.Country,
+    SUM(f.Sales) AS Total_Sales
+FROM FactSales f
+JOIN DimOrder o
+    ON f.Order_ID = o.Order_ID
+JOIN DimGeography g
+    ON o.Geography_ID = g.Geography_ID
+GROUP BY
+    g.Country
+ORDER BY
+    Total_Sales DESC;
+
+
+/* 17. Top 10 Products */
+
+SELECT TOP 10
+    p.Product_Name,
+    SUM(f.Sales) AS Total_Sales
+FROM FactSales f
+JOIN DimProduct p
+    ON f.Product_ID = p.Product_ID
+GROUP BY
+    p.Product_Name
+ORDER BY
+    Total_Sales DESC;
+
+
+/* 18. Top 10 Customers */
+
+SELECT TOP 10
+    c.Customer_Name,
+    SUM(f.Sales) AS Total_Sales
+FROM FactSales f
+JOIN DimOrder o
+    ON f.Order_ID = o.Order_ID
+JOIN DimCustomer c
+    ON o.Customer_ID = c.Customer_ID
+GROUP BY
+    c.Customer_Name
+ORDER BY
+    Total_Sales DESC;
+
+
+/* 19. Profit by Category */
+
+SELECT
+    p.Category,
+    SUM(f.Profit) AS Total_Profit
+FROM FactSales f
+JOIN DimProduct p
+    ON f.Product_ID = p.Product_ID
+GROUP BY
+    p.Category
+ORDER BY
+    Total_Profit DESC;
+
+
+/* =========================================================
+   PHASE 5 — YEAR OVER YEAR GROWTH
+   ========================================================= */
+
+
+/* 20. Year-over-Year Sales Growth */
+
+WITH YearlySales AS
+(
+    SELECT
+        d.Year,
+        SUM(f.Sales) AS Total_Sales
+    FROM FactSales f
+    JOIN DimOrder o
+        ON f.Order_ID = o.Order_ID
+    JOIN DimDate d
+        ON o.Order_Date = d.Date
+    GROUP BY
+        d.Year
+)
+
+SELECT
+    Year,
+    Total_Sales,
+
+    LAG(Total_Sales) OVER (
+        ORDER BY Year
+    ) AS Previous_Year_Sales,
+
+    (
+        (Total_Sales -
+         LAG(Total_Sales) OVER (ORDER BY Year))
+        /
+        NULLIF(
+            LAG(Total_Sales) OVER (ORDER BY Year),
+            0
+        )
+    ) * 100 AS YoY_Growth
+
+FROM YearlySales
+ORDER BY
+    Year;
+
+
+/* =========================================================
+   EXTRA BUSINESS ANALYSIS
+   ========================================================= */
+
+
+/* 21. Profit by Product */
+
+SELECT TOP 10
+    p.Product_Name,
+    SUM(f.Profit) AS Total_Profit
+FROM FactSales f
+JOIN DimProduct p
+    ON f.Product_ID = p.Product_ID
+GROUP BY
+    p.Product_Name
+ORDER BY
+    Total_Profit DESC;
+
+
+/* 22. Sales by City */
+
+SELECT
+    g.City,
+    SUM(f.Sales) AS Total_Sales
+FROM FactSales f
+JOIN DimOrder o
+    ON f.Order_ID = o.Order_ID
+JOIN DimGeography g
+    ON o.Geography_ID = g.Geography_ID
+GROUP BY
+    g.City
+ORDER BY
+    Total_Sales DESC;
+
+
+/* 23. Sales by Sales Channel */
+
+SELECT
+    o.Sales_Channel,
+    SUM(f.Sales) AS Total_Sales
+FROM FactSales f
+JOIN DimOrder o
+    ON f.Order_ID = o.Order_ID
+GROUP BY
+    o.Sales_Channel
+ORDER BY
+    Total_Sales DESC;
+
+
+/* 24. Sales by Payment Method */
+
+SELECT
+    o.Payment_Method,
+    SUM(f.Sales) AS Total_Sales
+FROM FactSales f
+JOIN DimOrder o
+    ON f.Order_ID = o.Order_ID
+GROUP BY
+    o.Payment_Method
+ORDER BY
+    Total_Sales DESC;
+
+
+/* 25. Orders by Order Status */
+
+SELECT
+    o.Order_Status,
+    COUNT(DISTINCT o.Order_ID) AS Total_Orders
+FROM DimOrder o
+GROUP BY
+    o.Order_Status
+ORDER BY
+    Total_Orders DESC;
+
+
+
+
+
+
+
+
+  ---------------------------------------------------------------------
+-- 1. Average Order Value (متوسط قيمة الطلب)
+---------------------------------------------------------------------
+SELECT
+    SUM(Sales) / COUNT(DISTINCT Order_ID) AS Average_Order_Value
+FROM FactSales;
+
+---------------------------------------------------------------------
+-- 2. Overall Profit Margin (هامش الربح الإجمالي)
+---------------------------------------------------------------------
+SELECT
+    SUM(Profit) / SUM(Sales) * 100 AS Profit_Margin
+FROM FactSales;
+
+---------------------------------------------------------------------
+-- 3. Monthly Sales Trend (الاتجاه الشهري للمبيعات – إصدار أول)
+---------------------------------------------------------------------
+SELECT
+    d.Year,
+    d.Month_Number,
+    d.Month_Name,
+    SUM(f.Sales) AS Total_Sales
+FROM FactSales f
+JOIN DimOrder o
+    ON f.Order_ID = o.Order_ID
+JOIN DimDate d
+    ON o.Order_Date = d.Date
+GROUP BY
+    d.Year,
+    d.Month_Number,
+    d.Month_Name
+ORDER BY
+    d.Year,
+    d.Month_Number;
+
+---------------------------------------------------------------------
+-- 4. Categories with Highest Revenue (الفئات الأعلى إيراداً)
+---------------------------------------------------------------------
+SELECT
+    p.Category,
+    SUM(f.Sales) AS Total_Sales
+FROM FactSales f
+JOIN DimProduct p
+    ON f.Product_ID = p.Product_ID
+GROUP BY
+    p.Category
+ORDER BY
+    Total_Sales DESC;
+
+---------------------------------------------------------------------
+-- 5. Most Profitable Categories (الفئات الأكثر ربحية – مع الهامش)
+---------------------------------------------------------------------
+SELECT
+    p.Category,
+    SUM(f.Sales) AS Total_Sales,
+    SUM(f.Profit) AS Total_Profit,
+    SUM(f.Profit) / SUM(f.Sales) * 100 AS Profit_Margin
+FROM FactSales f
+JOIN DimProduct p
+    ON f.Product_ID = p.Product_ID
+GROUP BY
+    p.Category
+ORDER BY
+    Total_Profit DESC;
+
+---------------------------------------------------------------------
+-- 6. Top 10 Most Profitable Products (أعلى 10 منتجات ربحاً – إصدار أول)
+---------------------------------------------------------------------
+SELECT TOP 10
+    p.Product_Name,
+    p.Category,
+    SUM(f.Sales) AS Total_Sales,
+    SUM(f.Profit) AS Total_Profit
+FROM FactSales f
+JOIN DimProduct p
+    ON f.Product_ID = p.Product_ID
+GROUP BY
+    p.Product_Name,
+    p.Category
+ORDER BY
+    Total_Profit DESC;
+
+---------------------------------------------------------------------
+-- 7. Top Customers by Revenue (أعلى العملاء إيراداً)
+---------------------------------------------------------------------
+SELECT TOP 10
+    c.Customer_ID,
+    c.Customer_Name,
+    c.Customer_Segment,
+    SUM(f.Sales) AS Total_Sales
+FROM FactSales f
+JOIN DimOrder o
+    ON f.Order_ID = o.Order_ID
+JOIN DimCustomer c
+    ON o.Customer_ID = c.Customer_ID
+GROUP BY
+    c.Customer_ID,
+    c.Customer_Name,
+    c.Customer_Segment
+ORDER BY
+    Total_Sales DESC;
+
+---------------------------------------------------------------------
+-- 8. Sales Channel Performance (أداء قنوات البيع)
+---------------------------------------------------------------------
+SELECT
+    o.Sales_Channel,
+    COUNT(DISTINCT o.Order_ID) AS Total_Orders,
+    SUM(f.Sales) AS Total_Sales,
+    SUM(f.Profit) AS Total_Profit
+FROM FactSales f
+JOIN DimOrder o
+    ON f.Order_ID = o.Order_ID
+GROUP BY
+    o.Sales_Channel
+ORDER BY
+    Total_Sales DESC;
+
+---------------------------------------------------------------------
+-- 9. Countries with Highest Revenue (الدول الأعلى إيراداً)
+---------------------------------------------------------------------
+SELECT
+    g.Country,
+    SUM(f.Sales) AS Total_Sales,
+    SUM(f.Profit) AS Total_Profit
+FROM FactSales f
+JOIN DimOrder o
+    ON f.Order_ID = o.Order_ID
+JOIN DimGeography g
+    ON o.Geography_ID = g.Geography_ID
+GROUP BY
+    g.Country
+ORDER BY
+    Total_Sales DESC;
+
+---------------------------------------------------------------------
+-- 10. High‑Sales vs High‑Profit Products (المنتجات عالية المبيعات مقابل الربحية)
+---------------------------------------------------------------------
+SELECT
+    p.Product_Name,
+    SUM(f.Sales) AS Total_Sales,
+    SUM(f.Profit) AS Total_Profit,
+    SUM(f.Profit) / SUM(f.Sales) * 100 AS Profit_Margin
+FROM FactSales f
+JOIN DimProduct p
+    ON f.Product_ID = p.Product_ID
+GROUP BY
+    p.Product_Name
+ORDER BY
+    Total_Sales DESC;
+
+---------------------------------------------------------------------
+-- 11. Monthly Sales Trend (الاتجاه الشهري – مع Profit و Orders)
+---------------------------------------------------------------------
+SELECT
+    d.Year,
+    d.Month_Number,
+    d.Month_Name,
+    SUM(f.Sales) AS Total_Sales,
+    SUM(f.Profit) AS Total_Profit,
+    COUNT(DISTINCT f.Order_ID) AS Total_Orders
+FROM FactSales f
+JOIN DimOrder o
+    ON f.Order_ID = o.Order_ID
+JOIN DimDate d
+    ON o.Order_Date = d.Date
+GROUP BY
+    d.Year,
+    d.Month_Number,
+    d.Month_Name
+ORDER BY
+    d.Year,
+    d.Month_Number;
+
+---------------------------------------------------------------------
+-- 12. Year‑over‑Year Performance (الأداء السنوي)
+---------------------------------------------------------------------
+SELECT
+    d.Year,
+    SUM(f.Sales) AS Total_Sales,
+    SUM(f.Profit) AS Total_Profit,
+    COUNT(DISTINCT f.Order_ID) AS Total_Orders
+FROM FactSales f
+JOIN DimOrder o
+    ON f.Order_ID = o.Order_ID
+JOIN DimDate d
+    ON o.Order_Date = d.Date
+GROUP BY
+    d.Year
+ORDER BY
+    d.Year;
+
+---------------------------------------------------------------------
+-- 13. Categories with Revenue, Profit & Quantity (الفئات مع الكميات)
+---------------------------------------------------------------------
+SELECT
+    p.Category,
+    SUM(f.Sales) AS Total_Sales,
+    SUM(f.Profit) AS Total_Profit,
+    SUM(f.Quantity) AS Total_Quantity
+FROM FactSales f
+JOIN DimProduct p
+    ON f.Product_ID = p.Product_ID
+GROUP BY
+    p.Category
+ORDER BY
+    Total_Sales DESC;
+
+---------------------------------------------------------------------
+-- 14. Category Profitability with Cost & Rounded Margin (الربحية مع التكلفة وهامش دقيق)
+---------------------------------------------------------------------
+SELECT
+    p.Category,
+    SUM(f.Sales) AS Total_Sales,
+    SUM(f.Cost) AS Total_Cost,
+    SUM(f.Profit) AS Total_Profit,
+    ROUND(
+        SUM(f.Profit) * 100.0 / NULLIF(SUM(f.Sales), 0),
+        2
+    ) AS Profit_Margin
+FROM FactSales f
+JOIN DimProduct p
+    ON f.Product_ID = p.Product_ID
+GROUP BY
+    p.Category
+ORDER BY
+    Total_Profit DESC;
+
+---------------------------------------------------------------------
+-- 15. Top 10 Products by Revenue (أعلى 10 منتجات من حيث الإيرادات – مع التفاصيل)
+---------------------------------------------------------------------
+SELECT TOP 10
+    p.Product_ID,
+    p.Product_Name,
+    p.Category,
+    p.Subcategory,
+    SUM(f.Quantity) AS Units_Sold,
+    SUM(f.Sales) AS Total_Sales,
+    SUM(f.Profit) AS Total_Profit
+FROM FactSales f
+JOIN DimProduct p
+    ON f.Product_ID = p.Product_ID
+GROUP BY
+    p.Product_ID,
+    p.Product_Name,
+    p.Category,
+    p.Subcategory
+ORDER BY
+    Total_Sales DESC;
+
+---------------------------------------------------------------------
+-- 16. Top 10 Most Profitable Products (أعلى 10 منتجات ربحاً – مع هامش الربح)
+---------------------------------------------------------------------
+SELECT TOP 10
+    p.Product_ID,
+    p.Product_Name,
+    p.Category,
+    SUM(f.Sales) AS Total_Sales,
+    SUM(f.Profit) AS Total_Profit,
+    ROUND(
+        SUM(f.Profit) * 100.0 / NULLIF(SUM(f.Sales), 0),
+        2
+    ) AS Profit_Margin
+FROM FactSales f
+JOIN DimProduct p
+    ON f.Product_ID = p.Product_ID
+GROUP BY
+    p.Product_ID,
+    p.Product_Name,
+    p.Category
+ORDER BY
+    Total_Profit DESC;
+
+
+
+
+
+
+
+/*Which customer segment generates the most revenue?*/
+
+SELECT
+    c.Customer_Segment,
+    COUNT(DISTINCT o.Order_ID) AS Total_Orders,
+    SUM(f.Sales) AS Total_Sales,
+    SUM(f.Profit) AS Total_Profit
+FROM FactSales f
+JOIN DimOrder o
+    ON f.Order_ID = o.Order_ID
+JOIN DimCustomer c
+    ON o.Customer_ID = c.Customer_ID
+GROUP BY
+    c.Customer_Segment
+ORDER BY
+    Total_Sales DESC;
+
+
+
+
+    /* Sales by Category*/
+SELECT
+    p.Category,
+    SUM(f.Sales) AS Total_Sales
+FROM FactSales f
+JOIN DimProduct p
+    ON f.Product_ID = p.Product_ID
+GROUP BY p.Category
+ORDER BY Total_Sales DESC;
+
+/*Sales by Product*/
+SELECT
+    p.Product_Name,
+    SUM(f.Sales) AS Total_Sales
+FROM FactSales f
+JOIN DimProduct p
+    ON f.Product_ID = p.Product_ID
+GROUP BY p.Product_Name
+ORDER BY Total_Sales DESC;
+
+
+/*Sales by Customer*/
+
+
+
+
+/*Top 10 Products*/
+SELECT TOP 10
+    p.Product_Name,
+    SUM(f.Sales) AS Total_Sales
+FROM FactSales f
+JOIN DimProduct p
+    ON f.Product_ID = p.Product_ID
+GROUP BY p.Product_Name
+ORDER BY Total_Sales DESC;
+
+
+/*Profit by Category*/
+SELECT
+    p.Category,
+    SUM(f.Profit) AS Total_Profit
+FROM FactSales f
+JOIN DimProduct p
+    ON f.Product_ID = p.Product_ID
+GROUP BY p.Category
+ORDER BY Total_Profit DESC;
+
+
+
+
+
+
+
+
+/* =========================================================
+   END OF SQL ANALYSIS
+   ========================================================= */
