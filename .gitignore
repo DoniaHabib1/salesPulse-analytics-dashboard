@@ -1,0 +1,9 @@
+*.pyc
+__pycache__/
+.pytest_cache/
+*.log
+*.db
+*.sqlite3
+*.csv
+*.xlsx
+.DS_Store
