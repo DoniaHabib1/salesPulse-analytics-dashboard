@@ -66,11 +66,11 @@ The project follows a complete data pipeline, from raw data extraction to an int
 ---
 
 ## 📁 Dashboard Screenshots)
-![Overview & Metrics](ecommroce_page-0001.jpg)
-![Product Performance](ecommroce_page-0002.jpg)
-![Customer Insights](ecommroce_page-0003.jpg)
-![Product Details](ecommroce_page-0004.jpg)
-![Business Insights](ecommroce_page-0005.jpg)
+![Overview & Metrics](images/ecommroce_page-0001.jpg)
+![Product Performance](images/ecommroce_page-0002.jpg)
+![Customer Insights](images/ecommroce_page-0003.jpg)
+![Product Details](images/ecommroce_page-0004.jpg)
+![Business Insights](images/ecommroce_page-0005.jpg)
 
 ---
 
