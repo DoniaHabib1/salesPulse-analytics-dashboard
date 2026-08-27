@@ -89,3 +89,4 @@ The project follows a complete data pipeline, from raw data extraction to an int
    git clone https://github.com/DoniaHabib1/SalesPulse-Dashboard.git
 2. Install dependencies: `pip install -r requirements.txt`
 3. Run the cleaning script: `python src/data_cleaning.py`
+4. **[Download the Full Case Study (PDF)](./SalesPulse_Analysis_CaseStudy.pdf)** for more details.
