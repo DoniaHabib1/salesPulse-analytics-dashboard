@@ -90,3 +90,7 @@ The project follows a complete data pipeline, from raw data extraction to an int
 2. Install dependencies: `pip install -r requirements.txt`
 3. Run the cleaning script: `python src/data_cleaning.py`
 4. **[Download the Full Case Study (PDF)](./SalesPulse_Analysis_CaseStudy.pdf)** for more details.
+
+##  Other Projects 
+-  **[ITI Statistics Case Studies](https://github.com/DoniaHabib1/iti-statistics-case-studies)**
+-  – Two complete case studies on data cleaning, Z-scores, and statistical distributions.
